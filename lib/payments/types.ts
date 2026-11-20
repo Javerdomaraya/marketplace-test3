@@ -34,7 +34,7 @@ export type PaymentIntent = {
   application_fee_amount: number | null; livemode: boolean;
 };
 export type CheckoutSpec = {
-  order: Order; successUrl: string; cancelUrl: string; appId: string; expiresAt: number;
+  order: Order; successUrl: string; cancelUrl: string; appId: string; proof: string; expiresAt: number;
 };
 export interface PaymentGateway {
   createAccount(email: string, appId: string): Promise<ConnectedAccount>;

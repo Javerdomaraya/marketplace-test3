@@ -1,6 +1,15 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { PaymentError } from './types';
+import type { Order } from './types';
 type Purpose = 'onboarding' | 'cancel';
+type ProofOrder = Pick<Order,'id'|'stripe_account_id'|'amount_cents'|'fee_cents'|'currency'>;
+export function createOrderProof(order:ProofOrder,secret:string):string {
+  return createHmac('sha256',secret).update('marketplace-order:v1:'+JSON.stringify([order.id,order.stripe_account_id,order.amount_cents,order.fee_cents,order.currency])).digest('hex');
+}
+export function verifyOrderProof(proof:string,order:ProofOrder,secret:string):boolean {
+  if(!/^[a-f0-9]{64}$/.test(proof))return false;
+  return timingSafeEqual(Buffer.from(proof,'hex'),Buffer.from(createOrderProof(order,secret),'hex'));
+}
 function signature(payload: string, secret: string): Buffer {
   return createHmac('sha256', secret).update('marketplace-flow:v1:' + payload).digest();
 }

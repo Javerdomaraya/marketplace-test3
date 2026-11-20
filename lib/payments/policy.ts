@@ -5,13 +5,13 @@ export function normalizeSellerEmail(value: string): string {
   if (email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new PaymentError('Enter a valid seller email.');
   return email;
 }
-export function priceToCents(value: string | number, checkoutMinimum = true): number {
+export function priceToCents(value: string | number, checkoutLimits = true): number {
   const text = String(value).trim();
   if (!/^\d+(?:\.\d{1,2})?$/.test(text)) throw new PaymentError('This listing has an invalid price.');
   const [whole, fractional = ''] = text.split('.');
   const cents = Number(BigInt(whole) * BigInt(100) + BigInt(fractional.padEnd(2, '0')));
-  if (!Number.isSafeInteger(cents) || cents < (checkoutMinimum ? 50 : 1) || cents > 10000000000) {
-    throw new PaymentError(checkoutMinimum ? 'Buy Now requires a USD price from $0.50 to $100,000,000.' : 'Invalid price.');
+  if (!Number.isSafeInteger(cents) || cents < (checkoutLimits ? 50 : 1) || cents > (checkoutLimits ? 99999999 : 10000000000)) {
+    throw new PaymentError(checkoutLimits ? 'Buy Now requires a USD price from $0.50 to $999,999.99.' : 'Invalid price.');
   }
   return cents;
 }

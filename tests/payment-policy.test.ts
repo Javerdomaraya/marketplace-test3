@@ -10,8 +10,9 @@ test('prices convert to exact USD cents and reject invalid Checkout amounts', ()
   assert.equal(priceToCents('70.00'), 7000);
   assert.equal(priceToCents(0.50), 50);
   assert.equal(priceToCents('0.29', false), 29);
-  assert.equal(priceToCents('100000000.00'), 10000000000);
-  for (const price of ['0', '-1', '1.005', 'NaN', '1e3', '100000001', '0.49']) assert.throws(() => priceToCents(price));
+  assert.equal(priceToCents('100000000.00', false), 10000000000);
+  assert.equal(priceToCents('999999.99'), 99999999);
+  for (const price of ['0', '-1', '1.005', 'NaN', '1e3', '1000000', '100000001', '0.49']) assert.throws(() => priceToCents(price));
 });
 test('application fee is 10 percent rounded to the nearest cent', () => {
   assert.equal(platformFee(7000), 700);

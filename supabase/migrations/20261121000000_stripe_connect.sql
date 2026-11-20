@@ -28,7 +28,7 @@ create table if not exists public.marketplace_orders (
   listing_title text not null,
   seller_email text not null references public.marketplace_sellers(email),
   stripe_account_id text not null,
-  amount_cents bigint not null check (amount_cents between 50 and 10000000000),
+  amount_cents bigint not null check (amount_cents between 50 and 99999999),
   fee_cents bigint not null check (fee_cents >= 0 and fee_cents <= amount_cents),
   currency text not null default 'usd' check (currency = 'usd'),
   status text not null default 'pending' check (status in ('pending','paid','expired')),
@@ -81,7 +81,7 @@ begin
   if not found or not (seller.details_submitted and seller.charges_enabled and seller.payouts_enabled)
     then raise exception 'The seller has not enabled payments'; end if;
   cents := round(item.price * 100);
-  if cents < 50 or cents > 10000000000 then raise exception 'This listing price cannot be purchased with Checkout'; end if;
+  if cents < 50 or cents > 99999999 then raise exception 'This listing price cannot be purchased with Checkout'; end if;
   insert into public.marketplace_orders(id,listing_id,listing_title,seller_email,stripe_account_id,amount_cents,fee_cents)
     values(p_order_id,item.id,item.title,seller.email,seller.stripe_account_id,cents,round(cents::numeric / 10))
     returning * into purchase;

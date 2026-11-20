@@ -43,6 +43,8 @@ test('database rejects unready sellers and prices below the card minimum', async
   await assert.rejects(() => reserve(), /seller/i);
   await db.exec('update public.marketplace_sellers set payouts_enabled=true; update public.listings set price=0.49');
   await assert.rejects(() => reserve(), /price/i);
+  await db.exec('update public.listings set price=1000000');
+  await assert.rejects(() => reserve(), /price/i);
 });
 test('payment fulfillment is atomic and idempotent, and expiration cannot unsell an item', async () => {
   await reserve();
