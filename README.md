@@ -1,36 +1,107 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Marketplace — Hiring Test 3
 
-## Getting Started
+A Facebook-inspired mini-marketplace where visitors can publish an item, browse and filter listings, open an item's detail page, and save an inquiry for the seller. No account or login is required.
 
-First, run the development server:
+Built with **Next.js 16.4.6 (App Router), React 19.3, TypeScript, Tailwind CSS 4, shadcn-style UI components, Lucide icons, Supabase Postgres, and Supabase Storage**. Vercel is the intended deployment target.
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [SETUP.md](SETUP.md) | Local installation, Supabase configuration, optional email setup, Vercel deployment, and troubleshooting |
+| [FEATURES.md](FEATURES.md) | User flows, validation rules, categories, and current limitations |
+| [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) | Architecture, database and access model, code organization, testing, and maintenance |
+
+## Assessment requirements
+
+| Requirement | Implementation | Production acceptance check |
+| --- | --- | --- |
+| Create a listing with photo, title, description, price, email, and category | `/create/item` uploads to Storage and inserts into `public.listings` | Create an item and inspect its row and uploaded image |
+| Browse all listings and filter by category | Responsive home-page grid with desktop category navigation and mobile category tabs | Create items in two categories, refresh, and filter |
+| Dedicated listing page with photo and full details | `/item/[id]` | Open and refresh the new item's URL |
+| Message Seller saves the buyer's message in Supabase | Inserts buyer email, message, and listing ID into `public.messages` | Submit an inquiry and verify it using Supabase administrative access |
+| Bonus: keyword search | Case-insensitive title, description, and location filtering | Search for a known word and combine it with a category |
+| Bonus: seller email notification | Optional Supabase Edge Function and Resend integration included | Configure the webhook and verify actual delivery separately |
+
+This table describes the source implementation. A passing local build does not establish that the deployed app, database policies, or email delivery have been verified.
+
+## Quick start
+
+Use Node.js **20.9 or newer** and npm. For a fresh checkout:
+
+1. Create a dedicated Supabase project for Marketplace.
+2. Run [supabase/schema.sql](supabase/schema.sql) in its SQL Editor, then run [supabase/verify.sql](supabase/verify.sql).
+3. From the project root, install dependencies and create the local configuration:
+
+   ```powershell
+   npm ci
+   Copy-Item .env.example .env.local
+   ```
+
+4. Edit `.env.local` using the project's public connection values:
+
+   ```dotenv
+   NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
+   NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=YOUR_PUBLIC_PUBLISHABLE_KEY
+   ```
+
+5. Start the app:
+
+   ```powershell
+   npm run dev
+   ```
+
+Open [localhost:3000](http://localhost:3000). An empty database shows an empty state; the app does not supply fake products. See [SETUP.md](SETUP.md) for the full process, expected SQL results, and deployment instructions.
+
+Only the Supabase publishable key (or legacy anon key) belongs in browser configuration. Privileged Supabase keys, Resend credentials, and webhook secrets stay server-side.
+
+## Routes
+
+| Route | Purpose |
+| --- | --- |
+| `/` | Browse, category filters, and keyword search |
+| `/create` | Listing-type chooser; select **Item for sale** |
+| `/create/item` | Item form with photo and live preview |
+| `/item/[id]` | Item details and Message Seller form; `id` is a real listing UUID |
+
+## Development commands
+
+```powershell
+npm test
+npm run lint
+npm run build
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+`npm start` serves an existing production build. Unit tests cover validation, listing pagination, message-form behavior, and seller-email logic with a mocked provider. See [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) for coverage and manual acceptance checks.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Submission checklist
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Before submitting at [apply.capm.us](https://apply.capm.us), choose **3) Marketplace** and prepare:
 
-## Learn More
+- [ ] **Live app URL:** a public Vercel production URL that opens without a Vercel login.
+- [ ] **GitHub repository URL:** a public repository containing the app, SQL scripts, and these documents.
+- [ ] **Screenshots:** demonstrate browsing/category filters, the create form, the detail page, and Message Seller confirmation. Crop private buyer data and credentials from any database evidence.
+- [ ] **Live verification:** complete all four acceptance checks in [SETUP.md](SETUP.md) against the production URL.
+- [ ] **Optional demo video:** no longer than 3 minutes, showing create, browse/search, and messaging. Use a public or unlisted link if hosted externally.
+- [ ] **Optional reviewer notes:** identify optional features that were configured and any known limitations.
 
-To learn more about Next.js, take a look at the following resources:
+The production URL, public repository URL, screenshots, and video must be supplied from the actual deployment. They are not bundled with these documents.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Suggested reviewer note, after completing the live checks:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+> No login is required. Use Create Listing → Item for sale to publish an item, filter or search on the home page, then open an item and choose Message Seller. Listings and images are stored in Supabase; buyer inquiries are stored privately. Prices are shown in USD.
 
-## Deploy on Vercel
+Add a claim about email delivery only after testing the optional notification deployment.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Scope and operational notes
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- One photo per listing, JPG/PNG/WebP, up to 5 MiB; prices must be greater than zero and display in USD.
+- Seller email is public. Buyer emails and messages have no public read access under the supplied schema.
+- The listing chooser's batch, vehicle-specific, and real-estate-specific forms are marked **Coming later**.
+- There is no in-app seller inbox, account system, checkout, or listing edit/delete flow.
+- Anonymous writes can attract spam and unwanted uploads. Abuse controls and moderation are future operational work.
+- An image uploaded before a failed listing insert can remain orphaned; trusted administrative cleanup may be needed.
+- Email notifications require separate setup; a saved message does not confirm email delivery.
+
+See [FEATURES.md](FEATURES.md) for the complete feature description and [supabase/EMAIL_NOTIFICATIONS.md](supabase/EMAIL_NOTIFICATIONS.md) for the optional notification service.

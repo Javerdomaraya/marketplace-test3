@@ -1,0 +1,7 @@
+# This function is called by a database webhook, not by the browser.
+# Gateway JWT verification is disabled, but the function itself requires
+# a strong x-marketplace-webhook-secret header on every POST request.
+project_id = "marketplace-test3"
+
+[functions.notify-seller]
+verify_jwt = false
