@@ -40,4 +40,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Local implementation ledger and owned Stripe webhook state
+/.superpowers/
+/.stripe-webhook.json
+/supabase/.temp/
 /supabase/.temp/
