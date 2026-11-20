@@ -11,4 +11,6 @@ export type Listing = {
   image_path: string;
   created_at: string;
   updated_at: string;
+  status?: 'available' | 'reserved' | 'sold';
+  sold_at?: string | null;
 };

@@ -11,6 +11,8 @@ export function ListingCard({ listing }: { listing: Listing }) {
     <Link href={'/item/' + listing.id} className="group min-w-0 overflow-hidden rounded-xl border border-slate-200 bg-white transition hover:border-blue-300 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#1877F2]">
       <div className="relative aspect-square overflow-hidden bg-slate-100">
         {url ? <Image src={url} alt={listing.title} fill unoptimized sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 20vw" className="object-cover transition-transform duration-200 group-hover:scale-[1.025]"/> : <div className="flex size-full items-center justify-center text-slate-300"><ImageIcon size={38}/></div>}
+        {listing.status==='sold'&&<span className="absolute left-2 top-2 rounded-full bg-slate-900 px-3 py-1 text-xs font-bold text-white">Sold</span>}
+        {listing.status==='reserved'&&<span className="absolute left-2 top-2 rounded-full bg-amber-100 px-3 py-1 text-xs font-bold text-amber-900">Reserved</span>}
       </div>
       <div className="space-y-1 px-3 pb-3 pt-3">
         <p className="text-lg font-extrabold tracking-tight text-slate-950">{formatPrice(Number(listing.price))}</p>

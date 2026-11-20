@@ -1,5 +1,7 @@
 # Marketplace setup and deployment
 
+**Test 4 branch:** follow [TEST4_SETUP.md](TEST4_SETUP.md) for the payment migration, server credentials, webhook, and separate production deployment. The sections below describe the Marketplace foundation.
+
 This guide configures the existing Marketplace app for local use and Vercel hosting. For user behavior, see [FEATURES.md](FEATURES.md); for internals, see [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md).
 
 ## 1. Prerequisites

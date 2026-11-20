@@ -131,6 +131,7 @@ export default function CreateListingPage() {
             {serverError && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{serverError}</div>}
             <Button type="submit" disabled={submitting} className="w-full rounded-lg">{submitting ? <><LoaderCircle size={17} className="animate-spin"/> Publishing...</> : <><Check size={17}/> Create Listing</>}</Button>
             <p className="flex items-start gap-2 text-xs leading-5 text-slate-500"><ShieldCheck size={16} className="shrink-0 text-[#1877F2]"/> Contact email is public. Your listing will be visible to everyone.</p>
+            <Link href={'/connect'+(fields.sellerEmail.trim()?'?email='+encodeURIComponent(fields.sellerEmail.trim()):'')} className="inline-block text-xs font-semibold text-[#1877F2] hover:underline">Enable Buy Now for your listings: Connect with Stripe</Link>
           </div>
         </form>
 

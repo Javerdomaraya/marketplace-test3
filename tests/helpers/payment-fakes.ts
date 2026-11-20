@@ -41,11 +41,11 @@ export class FakeGateway implements PaymentGateway {
     payment_intent:'pi_own',buyer_email:'buyer@example.com',metadata:{marketplace_app_id:'own-app',marketplace_order_id:orderId,marketplace_listing_id:listingId},livemode:false};
   intent:PaymentIntent={id:'pi_own',status:'succeeded',amount:7000,amount_received:7000,currency:'usd',application_fee_amount:700,livemode:false};
   specs:CheckoutSpec[]=[]; accountReads:string[]=[]; createdEmails:string[]=[];
-  createFails=false; expireFails=false;
+  createFails=false; createRejects=false; expireFails=false;
   async createAccount(email:string) { this.createdEmails.push(email); return this.account; }
   async getAccount(id:string) { this.accountReads.push(id); if(id!==this.account.id) throw new Error('Unknown account'); return this.account; }
   async createAccountLink(id:string, returnUrl:string, refreshUrl:string) { return 'https://connect.stripe.com/setup/test?return=' + encodeURIComponent(returnUrl) + '&refresh=' + encodeURIComponent(refreshUrl); }
-  async createSession(spec:CheckoutSpec) { this.specs.push(spec); if(this.createFails) throw new Error('Provider unavailable'); this.session.metadata.marketplace_order_id=spec.order.id; this.session.metadata.marketplace_order_proof=spec.proof; return {...this.session}; }
+  async createSession(spec:CheckoutSpec) { this.specs.push(spec); if(this.createRejects) throw new PaymentError('Checkout rejected',502,'checkout_rejected'); if(this.createFails) throw new Error('Provider outcome unknown'); this.session.metadata.marketplace_order_id=spec.order.id; this.session.metadata.marketplace_order_proof=spec.proof; return {...this.session}; }
   async getSession() { return {...this.session}; }
   async expireSession() { if(this.expireFails) throw new Error('Already completed'); this.session.status='expired'; return {...this.session}; }
   async getPaymentIntent() { return {...this.intent}; }

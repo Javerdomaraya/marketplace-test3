@@ -12,6 +12,7 @@ export function SiteHeader() {
         </Link>
         <nav aria-label="Marketplace navigation" className="flex items-center gap-2 sm:gap-4">
           <Link href="/" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 sm:block">Browse</Link>
+          <Link href="/connect" className="hidden rounded-lg px-3 py-2 text-sm font-semibold text-[#1877F2] hover:bg-blue-50 md:block">Connect with Stripe</Link>
           <Button asChild size="sm" className="rounded-lg"><Link href="/create"><Plus size={17}/> Create listing</Link></Button>
         </nav>
       </div>

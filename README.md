@@ -1,4 +1,6 @@
-# Marketplace — Hiring Test 3
+# Marketplace — Hiring Test 4: Stripe Connect
+
+This branch adds sandbox Stripe Connect onboarding, Buy Now, a 10% application fee, webhook-confirmed orders, and Sold listings. Start with [TEST4_SETUP.md](TEST4_SETUP.md) for the migration, server credentials, webhook, and Test 4 submission steps. The passed Test 3 source remains on `main`.
 
 A Facebook-inspired mini-marketplace where visitors can publish an item, browse and filter listings, open an item's detail page, and save an inquiry for the seller. No account or login is required.
 
@@ -8,6 +10,7 @@ Built with **Next.js 16.4.6 (App Router), React 19.3, TypeScript, Tailwind CSS 4
 
 | Document | Purpose |
 | --- | --- |
+| [TEST4_SETUP.md](TEST4_SETUP.md) | Sandbox payment setup, architecture, live testing, and Test 4 submission |
 | [SETUP.md](SETUP.md) | Local installation, Supabase configuration, optional email setup, Vercel deployment, and troubleshooting |
 | [FEATURES.md](FEATURES.md) | User flows, validation rules, categories, and current limitations |
 | [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) | Architecture, database and access model, code organization, testing, and maintenance |
@@ -30,7 +33,7 @@ This table describes the source implementation. A passing local build does not e
 Use Node.js **20.9 or newer** and npm. For a fresh checkout:
 
 1. Create a dedicated Supabase project for Marketplace.
-2. Run [supabase/schema.sql](supabase/schema.sql) in its SQL Editor, then run [supabase/verify.sql](supabase/verify.sql).
+2. Run [supabase/schema.sql](supabase/schema.sql), then the [Test 4 migration](supabase/migrations/20261121000000_stripe_connect.sql), in the SQL Editor. Verify with [supabase/verify-payments.sql](supabase/verify-payments.sql) and configure payment credentials using [TEST4_SETUP.md](TEST4_SETUP.md).
 3. From the project root, install dependencies and create the local configuration:
 
    ```powershell
@@ -77,29 +80,23 @@ npm start
 
 ## Submission checklist
 
-Before submitting at [apply.capm.us](https://apply.capm.us), choose **3) Marketplace** and prepare:
+For this branch, submit at [apply.capm.us](https://apply.capm.us) and choose **4) Stripe Connect**:
 
-- [ ] **Live app URL:** a public Vercel production URL that opens without a Vercel login.
-- [ ] **GitHub repository URL:** a public repository containing the app, SQL scripts, and these documents.
-- [ ] **Screenshots:** demonstrate browsing/category filters, the create form, the detail page, and Message Seller confirmation. Crop private buyer data and credentials from any database evidence.
-- [ ] **Live verification:** complete all four acceptance checks in [SETUP.md](SETUP.md) against the production URL.
-- [ ] **Optional demo video:** no longer than 3 minutes, showing create, browse/search, and messaging. Use a public or unlisted link if hosted externally.
-- [ ] **Optional reviewer notes:** identify optional features that were configured and any known limitations.
+- [ ] Public Test 4 Vercel production URL with an available listing from an onboarded seller.
+- [ ] Public [Test 4 implementation branch](https://github.com/Javerdomaraya/marketplace-test3/tree/test4-stripe-connect), clearly identified in reviewer notes.
+- [ ] Screenshots of hosted onboarding, Buy Now/Checkout, confirmed success, and the paid Supabase order.
+- [ ] Verified 4242 sandbox purchase, saved paid order, and Sold listing.
+- [ ] Another available listing the reviewer can purchase.
+- [ ] Optional public/unlisted demo video, at most 3 minutes, and notes naming the seller/item.
 
-The production URL, public repository URL, screenshots, and video must be supplied from the actual deployment. They are not bundled with these documents.
-
-Suggested reviewer note, after completing the live checks:
-
-> No login is required. Use Create Listing → Item for sale to publish an item, filter or search on the home page, then open an item and choose Message Seller. Listings and images are stored in Supabase; buyer inquiries are stored privately. Prices are shown in USD.
-
-Add a claim about email delivery only after testing the optional notification deployment.
+The live URL and evidence must come from the actual deployment. Green local checks do not prove live onboarding, webhook delivery, or settlement. Use the full checklist in [TEST4_SETUP.md](TEST4_SETUP.md).
 
 ## Scope and operational notes
 
 - One photo per listing, JPG/PNG/WebP, up to 5 MiB; prices must be greater than zero and display in USD.
 - Seller email is public. Buyer emails and messages have no public read access under the supplied schema.
 - The listing chooser's batch, vehicle-specific, and real-estate-specific forms are marked **Coming later**.
-- There is no in-app seller inbox, account system, checkout, or listing edit/delete flow.
+- There is no in-app seller inbox, marketplace login, listing edit/delete flow, cart, or real-money payment support.
 - Anonymous writes can attract spam and unwanted uploads. Abuse controls and moderation are future operational work.
 - An image uploaded before a failed listing insert can remain orphaned; trusted administrative cleanup may be needed.
 - Email notifications require separate setup; a saved message does not confirm email delivery.

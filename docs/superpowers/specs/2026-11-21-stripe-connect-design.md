@@ -16,7 +16,7 @@ Use the existing clean checkout on the feature branch, honoring the desktop pref
 - Server saves the connected account and fresh readiness flags. Ready requires details_submitted, charges_enabled, and payouts_enabled.
 - Eligible available listings display Buy Now; sold and reserved listings cannot start another purchase.
 - Checkout uses the database listing price and seller mapping, never a price/account supplied by the browser.
-- Checkout reserves the single item transactionally. Failed creation releases it; cancellation first expires the Stripe session, then releases it. Expired-session webhooks also release reservations.
+- Checkout reserves the single item transactionally. Definite creation rejections release it; ambiguous provider timeouts keep it reserved until Stripe confirmation. Cancellation first expires the Stripe session, then releases it. Expired-session webhooks also release reservations.
 - Success page polls the private order through an opaque Checkout Session ID. Only the verified payment handler sets paid/Sold.
 - Every flow is explicitly sandbox-only; no login is added, per assessment.
 

@@ -112,7 +112,7 @@ Under the supplied schema:
 
 | Data or operation | Visitor access |
 | --- | --- |
-| Listing fields, including seller email | Public SELECT and INSERT |
+| Listing display fields, including seller email | Public SELECT and initial available-listing INSERT; internal payment references are private |
 | Listing UPDATE or DELETE | Not granted |
 | Product images | Public URLs; uploads constrained to the marketplace bucket and UUID filenames |
 | Image overwrite or deletion | Not granted |
@@ -124,7 +124,9 @@ The public key is used with database privileges and RLS. Privileged database/ema
 
 ## Current boundaries
 
-- No login, profiles, seller dashboard, listing edit/delete, checkout, payments, favorites, or chat.
+Test 4 adds seller onboarding at `/connect`, Buy Now for eligible available listings, direct-charge sandbox Checkout with a 10% fee, private orders, and webhook-confirmed Sold status. Checkout reserves one item transactionally. Cancellation confirms Stripe expiration before releasing it; the success page waits for the saved paid order. USD Checkout supports $0.50–$999,999.99. See [TEST4_SETUP.md](TEST4_SETUP.md) for configuration and live acceptance checks.
+
+- No marketplace login, profiles, seller dashboard, listing edit/delete, real-money payments, cart, favorites, or chat.
 - One image per listing; no photo gallery or batch creation.
 - The chooser's multiple-listing, dedicated vehicle, and dedicated real-estate forms are disabled and labeled **Coming later**.
 - No automatic live refresh; reload or revisit the home page to fetch new data.

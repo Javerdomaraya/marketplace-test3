@@ -30,7 +30,7 @@ export default function Home() {
       try {
         const rows = await loadAllListings<Listing>(async (from, to) => {
           const { data, error: queryError } = await supabase.from('listings')
-            .select('id,title,description,price,category,seller_email,image_path,location,created_at,updated_at')
+            .select('id,title,description,price,category,seller_email,image_path,location,created_at,updated_at,status,sold_at')
             .order('created_at', { ascending: false })
             .order('id', { ascending: false })
             .range(from, to);

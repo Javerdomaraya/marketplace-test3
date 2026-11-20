@@ -15,6 +15,7 @@ export default function CreateTypePage() {
         <Link href="/" className="mb-7 inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-[#1877F2]"><ArrowLeft size={16}/> Marketplace</Link>
         <h1 className="text-lg font-extrabold text-slate-900">Create new listing</h1>
         <p className="mt-2 text-xs leading-5 text-slate-500">Choose how you want to sell.</p>
+        <Link href="/connect" className="mt-4 inline-block text-sm font-semibold text-[#1877F2] hover:underline">Connect with Stripe</Link>
         <div className="mt-6 flex items-center gap-3 rounded-lg bg-blue-50 px-4 py-3 text-sm font-bold text-[#1877F2]"><Tag size={17}/> Choose listing type</div>
       </aside>
       <section className="flex min-h-[55vh] flex-col justify-center py-8 lg:py-12">

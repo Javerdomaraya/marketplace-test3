@@ -36,6 +36,11 @@ test('expired sessions release pending items but never unsell a paid item',async
   const paid=await pendingOrder();paid.gateway.session.payment_status='paid';await processStripeEvent(event(paid.gateway.session),paid);
   await processStripeEvent(event({...paid.gateway.session,status:'expired'},'checkout.session.expired'),paid);assert.equal(paid.repo.listing.status,'sold');
 });
+test('an owned expiration event recovers an order whose session persistence was interrupted',async()=>{
+  const ctx=await pendingOrder();ctx.repo.order!.stripe_checkout_session_id=null;
+  await processStripeEvent(event({...ctx.gateway.session,status:'expired'},'checkout.session.expired'),ctx);
+  assert.equal(ctx.repo.listing.status,'available');
+});
 test('account.updated refreshes a known account from Stripe and ignores foreign accounts',async()=>{
   const ctx=fakeContext();ctx.repo.seller!.charges_enabled=false;
   await processStripeEvent(event({...ctx.gateway.account,charges_enabled:false},'account.updated'),ctx);

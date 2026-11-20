@@ -187,6 +187,12 @@ After changes affecting a core flow, run the relevant production acceptance step
 
 ## Known limitations and maintenance
 
+Test 4 payments run through `app/api/stripe/` and the official server-side Stripe SDK. `lib/payments/` separates policy, signed flow tokens/order proofs, onboarding, Checkout, webhook processing, and the Stripe/Supabase adapters. The [payment migration](supabase/migrations/20261121000000_stripe_connect.sql) adds private seller/order tables and service-only row-locking reservation/settlement RPCs.
+
+Checkout uses the database price/account snapshot. Verified events check ownership proof, connected account, amount, currency, successful payment, and fee before atomically saving paid/Sold. Unknown shared-sandbox events are ignored. Cancellation requires confirmed Stripe expiration. An ambiguous provider timeout keeps the reservation until the owned session is confirmed expired.
+
+The unique server Supabase key derives flow-token/order-proof signing material; the shared assessment Stripe key is not used as a private app-signing key. UI routes are `/connect`, `/checkout/success`, and `/checkout/cancel`. Read [TEST4_SETUP.md](TEST4_SETUP.md) for operating details and live verification.
+
 This assessment deliberately allows anonymous listing/image/message creation. It has no seller identity verification, CAPTCHA, rate limit, moderation, or resource quotas. Public product images and seller emails are visible to visitors; private inquiries must retain their restricted read policy.
 
 For a larger service, database-side search/filtering and visible pagination would avoid downloading the entire catalog. Administrative routines would also need to handle orphaned Storage uploads and data retention. These are future improvements, not current app features.

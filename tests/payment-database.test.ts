@@ -86,3 +86,15 @@ test('settlement requires non-null payment identifiers and amounts', async () =>
     [orderId,null,null,null,null,null,null,null]));
   assert.equal((await db.query<{status:string}>('select status from public.listings')).rows[0].status, 'reserved');
 });
+
+test('payment protection preserves anonymous listing creation and display reads', async () => {
+  await db.exec('set role anon');
+  try {
+    const created=await db.query<{id:string}>(`insert into public.listings(title,price,seller_email)
+      values('Another item',25,'another@example.com') returning id`);
+    assert.equal(created.rows.length,1);
+    const display=await db.query<{status:string}>('select id,title,image_path,status from public.listings');
+    assert.equal(display.rows.length,2);
+    assert.ok(display.rows.every(row=>row.status==='available'));
+  } finally { await db.exec('reset role'); }
+});

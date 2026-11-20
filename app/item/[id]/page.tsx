@@ -9,6 +9,7 @@ import { getPublicImageUrl, getSupabase } from '../../../lib/supabase';
 import { formatDate, formatPrice } from '../../../lib/utils';
 import { isUuid } from '../../../lib/validation';
 import { MessageSellerForm } from '../../../components/marketplace/message-seller-form';
+import { PurchasePanel } from '../../../components/marketplace/purchase-panel';
 import type { Listing } from '../../../types/marketplace';
 
 export default function ItemDetailPage() {
@@ -27,7 +28,7 @@ function ItemDetailContent() {
       if (!isUuid(id)) { if (active) { setError('This listing link is invalid.'); setLoading(false); } return; }
       const supabase = getSupabase();
       if (!supabase) { if (active) { setError('Connect Supabase in .env.local to view this listing.'); setLoading(false); } return; }
-      const { data, error: queryError } = await supabase.from('listings').select('id,title,description,price,category,seller_email,image_path,location,created_at,updated_at').eq('id', id).maybeSingle();
+      const { data, error: queryError } = await supabase.from('listings').select('id,title,description,price,category,seller_email,image_path,location,created_at,updated_at,status,sold_at').eq('id', id).maybeSingle();
       if (!active) return;
       setListing(data as Listing | null);
       setError(queryError ? queryError.message : data ? '' : 'This listing was not found. It may have been removed.');
@@ -46,6 +47,7 @@ function ItemDetailContent() {
       <aside className="min-w-0 rounded-xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
         <h1 className="break-words text-2xl font-extrabold leading-tight text-slate-900">{listing.title}</h1>
         <p className="mt-2 text-2xl font-bold tracking-tight text-slate-950">{formatPrice(Number(listing.price))}</p>
+        <PurchasePanel key={listing.id} listingId={listing.id} sellerEmail={listing.seller_email} initialStatus={listing.status}/>
         <p className="mt-4 text-xs text-slate-500">Listed {formatDate(listing.created_at)}</p>
         {listing.location && <p className="mt-1 flex items-center gap-1 text-sm text-slate-500"><MapPin size={14}/>{listing.location}</p>}
         <p className="mt-5 flex items-center gap-2 text-sm text-slate-600"><Tag size={16} className="text-slate-400"/><span>Category: {listing.category}</span></p>

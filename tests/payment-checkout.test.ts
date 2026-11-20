@@ -15,10 +15,15 @@ test('sold, reserved, unknown, and unready listings cannot start Checkout',async
   const ctx=fakeContext();ctx.gateway.account.payouts_enabled=false;await assert.rejects(()=>createCheckout(listingId,ctx),/seller/i);
   assert.equal(ctx.repo.listing.status,'available');assert.equal(ctx.gateway.specs.length,0);
 });
-test('provider creation failure releases the reservation',async()=>{
-  const ctx=fakeContext();ctx.gateway.createFails=true;
+test('a definitive provider rejection releases the reservation',async()=>{
+  const ctx=fakeContext();ctx.gateway.createRejects=true;
   await assert.rejects(()=>createCheckout(listingId,ctx));
   assert.equal(ctx.repo.listing.status,'available');assert.equal(ctx.repo.order!.status,'expired');
+});
+test('an ambiguous provider timeout does not release an item that may have an active session',async()=>{
+  const ctx=fakeContext();ctx.gateway.createFails=true;
+  await assert.rejects(()=>createCheckout(listingId,ctx));
+  assert.equal(ctx.repo.listing.status,'reserved');
 });
 test('failed session persistence expires Stripe before releasing the reservation',async()=>{
   const ctx=fakeContext();ctx.repo.attachFails=true;

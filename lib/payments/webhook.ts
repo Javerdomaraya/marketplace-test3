@@ -26,7 +26,10 @@ export async function processStripeEvent(event:PaymentEvent,ctx:PaymentContext):
     (order.stripe_checkout_session_id!==null&&order.stripe_checkout_session_id!==object.id)||
     !verifyOrderProof(String(metadata.marketplace_order_proof??''),order,ctx.secret))return 'ignored';
   if(event.type==='checkout.session.expired') {
-    if(object.status==='expired'&&order.status==='pending'&&order.stripe_checkout_session_id===object.id) await ctx.repo.releaseOrder(order.id,object.id);
+    if(object.status==='expired'&&order.status==='pending') {
+      if(!order.stripe_checkout_session_id)await ctx.repo.attachSession(order.id,object.id);
+      await ctx.repo.releaseOrder(order.id,object.id);
+    }
     return 'expired';
   }
   if(object.payment_status!=='paid')return 'ignored';

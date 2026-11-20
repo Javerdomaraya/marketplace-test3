@@ -30,12 +30,19 @@ export class StripeGateway implements PaymentGateway {
   async createSession(spec:CheckoutSpec) {
     const {order}=spec;
     const metadata={marketplace_app_id:spec.appId,marketplace_order_id:order.id,marketplace_listing_id:order.listing_id,marketplace_order_proof:spec.proof};
-    return session(await this.stripe.checkout.sessions.create({
+    try { return session(await this.stripe.checkout.sessions.create({
       mode:'payment',allowed_payment_method_types:['card'],client_reference_id:order.id,metadata,
       line_items:[{quantity:1,price_data:{currency:order.currency,unit_amount:order.amount_cents,product_data:{name:order.listing_title}}}],
       payment_intent_data:{application_fee_amount:order.fee_cents,metadata},
       success_url:spec.successUrl,cancel_url:spec.cancelUrl,expires_at:spec.expiresAt,
-    },{stripeAccount:order.stripe_account_id,idempotencyKey:'marketplace-checkout-'+order.id}));
+    },{stripeAccount:order.stripe_account_id,idempotencyKey:'marketplace-checkout-'+order.id})); }
+    catch(error) {
+      if(error instanceof Stripe.errors.StripeInvalidRequestError||error instanceof Stripe.errors.StripeAuthenticationError||
+        error instanceof Stripe.errors.StripePermissionError||error instanceof Stripe.errors.StripeRateLimitError) {
+        throw new PaymentError('Stripe could not start this checkout. Please check the item and seller payment setup.',502,'checkout_rejected');
+      }
+      throw error;
+    }
   }
   async getSession(id:string,accountId:string) { return session(await this.stripe.checkout.sessions.retrieve(id,{},{stripeAccount:accountId})); }
   async expireSession(id:string,accountId:string) { return session(await this.stripe.checkout.sessions.expire(id,{},{stripeAccount:accountId})); }

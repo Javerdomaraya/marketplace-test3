@@ -30,7 +30,9 @@ export async function createCheckout(listingId:string, ctx:PaymentContext, purch
     return {url:session.url};
   } catch(error) {
     try {
-      if(!session) await ctx.repo.releaseOrder(order.id);
+      if(!session) {
+        if(error instanceof PaymentError&&error.code==='checkout_rejected')await ctx.repo.releaseOrder(order.id);
+      }
       else {
         const expired=await ctx.gateway.expireSession(session.id,order.stripe_account_id);
         if(expired.status==='expired') await ctx.repo.releaseOrder(order.id,session.id);

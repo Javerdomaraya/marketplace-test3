@@ -10,7 +10,9 @@ where schemaname = 'public' and tablename in ('listings','messages')
 order by tablename, policyname;
 
 select
-  has_table_privilege('anon', 'public.listings', 'SELECT') as can_browse_listings,
+  has_column_privilege('anon', 'public.listings', 'id', 'SELECT')
+    and has_column_privilege('anon', 'public.listings', 'title', 'SELECT')
+    and has_column_privilege('anon', 'public.listings', 'image_path', 'SELECT') as can_browse_listings,
   has_table_privilege('anon', 'public.listings', 'INSERT') as can_create_listings,
   has_table_privilege('anon', 'public.messages', 'INSERT') as can_send_message,
   has_table_privilege('anon', 'public.messages', 'SELECT') as can_read_messages_should_be_false;
