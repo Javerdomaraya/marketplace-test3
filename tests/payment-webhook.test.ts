@@ -40,6 +40,23 @@ test('an owned expiration event recovers an order whose session persistence was 
   const ctx=await pendingOrder();ctx.repo.order!.stripe_checkout_session_id=null;
   await processStripeEvent(event({...ctx.gateway.session,status:'expired'},'checkout.session.expired'),ctx);
   assert.equal(ctx.repo.listing.status,'available');
+  assert.equal(ctx.gateway.specs.length,1,'replay the exact original idempotent operation');
+});
+test('copied order metadata cannot bind another provider session after an interrupted write',async()=>{
+  const ctx=await pendingOrder();ctx.repo.order!.stripe_checkout_session_id=null;
+  await processStripeEvent(event({...ctx.gateway.session,id:'cs_test_copied',status:'expired'},'checkout.session.expired'),ctx);
+  assert.equal(ctx.repo.listing.status,'reserved');assert.notEqual(ctx.repo.order!.stripe_checkout_session_id,'cs_test_copied');
+});
+test('stored order proof survives a server credential rotation',async()=>{
+  const ctx=await pendingOrder();ctx.secret='rotated-private-key';ctx.gateway.session.payment_status='paid';
+  await processStripeEvent(event(ctx.gateway.session),ctx);
+  assert.equal(ctx.repo.order!.status,'paid');
+});
+test('unbound sessions beyond the idempotency retention window require reconciliation',async()=>{
+  const ctx=await pendingOrder();ctx.repo.order!.stripe_checkout_session_id=null;
+  ctx.repo.order!.checkout_spec!.createdAt=Math.floor(Date.now()/1000)-86401;
+  await assert.rejects(()=>processStripeEvent(event({...ctx.gateway.session,status:'expired'},'checkout.session.expired'),ctx),/reconcil/i);
+  assert.equal(ctx.gateway.specs.length,0);assert.equal(ctx.repo.listing.status,'reserved');
 });
 test('account.updated refreshes a known account from Stripe and ignores foreign accounts',async()=>{
   const ctx=fakeContext();ctx.repo.seller!.charges_enabled=false;

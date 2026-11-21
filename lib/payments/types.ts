@@ -18,6 +18,7 @@ export type Order = {
   stripe_account_id: string; amount_cents: number; fee_cents: number; currency: 'usd';
   status: 'pending' | 'paid' | 'expired'; stripe_checkout_session_id: string | null;
   stripe_payment_intent_id: string | null; buyer_email?: string | null; paid_at?: string | null;
+  checkout_spec?: Omit<CheckoutSpec,'order'> | null;
 };
 export type ConnectedAccount = {
   id: string; details_submitted: boolean; charges_enabled: boolean; payouts_enabled: boolean;
@@ -34,7 +35,7 @@ export type PaymentIntent = {
   application_fee_amount: number | null; livemode: boolean;
 };
 export type CheckoutSpec = {
-  order: Order; successUrl: string; cancelUrl: string; appId: string; proof: string; expiresAt: number;
+  order: Order; successUrl: string; cancelUrl: string; appId: string; proof: string; expiresAt: number; createdAt: number;
 };
 export interface PaymentGateway {
   createAccount(email: string, appId: string): Promise<ConnectedAccount>;
@@ -52,6 +53,7 @@ export interface PaymentRepository {
   saveSeller(seller: Seller): Promise<Seller>;
   updateSeller(seller: Seller): Promise<void>;
   reserveOrder(listingId: string, orderId: string): Promise<Order>;
+  saveCheckoutSpec(orderId: string, spec: Omit<CheckoutSpec,'order'>): Promise<void>;
   attachSession(orderId: string, sessionId: string): Promise<void>;
   findOrder(id: string): Promise<Order | null>;
   findOrderBySession(sessionId: string): Promise<Order | null>;

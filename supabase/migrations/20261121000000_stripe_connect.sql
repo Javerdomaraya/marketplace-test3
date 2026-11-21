@@ -35,6 +35,7 @@ create table if not exists public.marketplace_orders (
   stripe_checkout_session_id text unique check (stripe_checkout_session_id like 'cs_test_%'),
   stripe_payment_intent_id text unique,
   buyer_email text,
+  checkout_spec jsonb,
   created_at timestamptz not null default now(),
   paid_at timestamptz,
   constraint marketplace_paid_fields_check check (status <> 'paid' or
@@ -90,6 +91,19 @@ begin
 end;
 $$;
 
+create or replace function public.save_marketplace_checkout_spec(p_order_id uuid, p_spec jsonb)
+returns void language plpgsql security definer set search_path = '' as $$
+declare purchase public.marketplace_orders%rowtype;
+begin
+  select * into purchase from public.marketplace_orders where id=p_order_id for update;
+  if not found then raise exception 'Order not found'; end if;
+  if p_spec is null or jsonb_typeof(p_spec) <> 'object' then raise exception 'Invalid checkout spec'; end if;
+  if purchase.checkout_spec is not null and purchase.checkout_spec <> p_spec then raise exception 'Checkout spec is immutable and must match'; end if;
+  if purchase.status <> 'pending' then raise exception 'Order is no longer pending'; end if;
+  update public.marketplace_orders set checkout_spec=p_spec where id=p_order_id;
+end;
+$$;
+
 create or replace function public.attach_marketplace_checkout(p_order_id uuid, p_session_id text)
 returns void language plpgsql security definer set search_path = '' as $$
 declare purchase public.marketplace_orders%rowtype;
@@ -134,7 +148,7 @@ begin
     or p_amount_cents is null or p_fee_cents is null or p_currency is null
     or purchase.stripe_account_id <> p_account_id or purchase.amount_cents <> p_amount_cents
     or purchase.fee_cents <> p_fee_cents or purchase.currency <> p_currency
-    or (purchase.stripe_checkout_session_id is not null and purchase.stripe_checkout_session_id <> p_session_id)
+    or purchase.stripe_checkout_session_id is distinct from p_session_id
     or p_session_id not like 'cs_test_%' or p_payment_intent_id not like 'pi_%'
     then raise exception 'Payment does not match the reserved order'; end if;
   if purchase.status='paid' then
@@ -153,10 +167,12 @@ end;
 $$;
 
 revoke all on function public.reserve_marketplace_order(uuid,uuid) from public,anon,authenticated;
+revoke all on function public.save_marketplace_checkout_spec(uuid,jsonb) from public,anon,authenticated;
 revoke all on function public.attach_marketplace_checkout(uuid,text) from public,anon,authenticated;
 revoke all on function public.release_marketplace_order(uuid,text) from public,anon,authenticated;
 revoke all on function public.complete_marketplace_order(uuid,text,text,text,bigint,bigint,text,text) from public,anon,authenticated;
 grant execute on function public.reserve_marketplace_order(uuid,uuid) to service_role;
+grant execute on function public.save_marketplace_checkout_spec(uuid,jsonb) to service_role;
 grant execute on function public.attach_marketplace_checkout(uuid,text) to service_role;
 grant execute on function public.release_marketplace_order(uuid,text) to service_role;
 grant execute on function public.complete_marketplace_order(uuid,text,text,text,bigint,bigint,text,text) to service_role;

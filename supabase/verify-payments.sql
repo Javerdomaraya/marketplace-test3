@@ -10,6 +10,8 @@ select
   has_column_privilege('anon','public.listings','status','SELECT') as public_listing_status_should_be_true,
   has_column_privilege('anon','public.listings','reservation_order_id','SELECT') as private_reservation_should_be_false,
   has_function_privilege('anon','public.reserve_marketplace_order(uuid,uuid)','EXECUTE') as visitor_reserve_should_be_false,
+  has_function_privilege('anon','public.save_marketplace_checkout_spec(uuid,jsonb)','EXECUTE') as visitor_checkout_spec_should_be_false,
+  has_function_privilege('service_role','public.save_marketplace_checkout_spec(uuid,jsonb)','EXECUTE') as server_checkout_spec_should_be_true,
   has_function_privilege('service_role','public.reserve_marketplace_order(uuid,uuid)','EXECUTE') as server_reserve_should_be_true;
 select status,count(*) from public.listings group by status;
 select status,count(*) from public.marketplace_orders group by status;

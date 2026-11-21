@@ -19,19 +19,24 @@ export async function createCheckout(listingId:string, ctx:PaymentContext, purch
   if(!sellerReady(fresh)) throw new PaymentError('The seller has not completed payment setup.',409);
   const order=await ctx.repo.reserveOrder(listingId,purchaseId);
   let session:CheckoutSession|null=null;
+  let attempted=false;
   try {
-    session=await ctx.gateway.createSession({
-      order,appId:ctx.appId,proof:createOrderProof(order,ctx.secret),expiresAt:Math.floor(Date.now()/1000)+1800,
+    const createdAt=Math.floor(Date.now()/1000);
+    const spec={
+      appId:ctx.appId,proof:createOrderProof(order,ctx.secret),createdAt,expiresAt:createdAt+2100,
       successUrl:ctx.siteUrl+'/checkout/success?session_id={CHECKOUT_SESSION_ID}',
       cancelUrl:ctx.siteUrl+'/checkout/cancel?token='+encodeURIComponent(signFlowToken('cancel',order.id,ctx.secret)),
-    });
+    };
+    await ctx.repo.saveCheckoutSpec(order.id,spec);
+    attempted=true;
+    session=await ctx.gateway.createSession({...spec,order});
     if(!session.url || session.livemode || !session.id.startsWith('cs_test_')) throw new PaymentError('Sandbox checkout could not be started.',502);
     await ctx.repo.attachSession(order.id,session.id);
     return {url:session.url};
   } catch(error) {
     try {
       if(!session) {
-        if(error instanceof PaymentError&&error.code==='checkout_rejected')await ctx.repo.releaseOrder(order.id);
+        if(!attempted||(error instanceof PaymentError&&error.code==='checkout_rejected'))await ctx.repo.releaseOrder(order.id);
       }
       else {
         const expired=await ctx.gateway.expireSession(session.id,order.stripe_account_id);

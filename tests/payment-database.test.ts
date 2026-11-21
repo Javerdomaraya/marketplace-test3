@@ -98,3 +98,12 @@ test('payment protection preserves anonymous listing creation and display reads'
     assert.ok(display.rows.every(row=>row.status==='available'));
   } finally { await db.exec('reset role'); }
 });
+test('checkout recovery parameters are immutable and private',async()=>{
+  await reserve();const spec={proof:'a'.repeat(64),createdAt:2000000000,expiresAt:2000002100,appId:'own-app',successUrl:'https://own.example/success',cancelUrl:'https://own.example/cancel'};
+  await db.query('select public.save_marketplace_checkout_spec($1,$2)',[orderId,JSON.stringify(spec)]);
+  await db.query('select public.save_marketplace_checkout_spec($1,$2)',[orderId,JSON.stringify(spec)]);
+  await assert.rejects(()=>db.query('select public.save_marketplace_checkout_spec($1,$2)',[orderId,JSON.stringify({...spec,proof:'b'.repeat(64)})]),/match|immutable/i);
+  await db.exec('set role anon');
+  try {await assert.rejects(()=>db.query('select public.save_marketplace_checkout_spec($1,$2)',[orderId,JSON.stringify(spec)]),/permission denied/i);}
+  finally {await db.exec('reset role');}
+});

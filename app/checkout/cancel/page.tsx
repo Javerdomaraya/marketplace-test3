@@ -10,6 +10,9 @@ type CancelResult={status:'pending'|'paid'|'expired';listingId:string};
 export default function CancelPage(){return <Suspense fallback={<PaymentShell title="Checking checkout"><p className="mt-4 text-sm text-slate-500">Loading checkout...</p></PaymentShell>}><CancelContent/></Suspense>;}
 function CancelContent() {
   const params=useSearchParams();const token=params.get('token')??'';
+  return <CancellationContent key={token} token={token}/>;
+}
+function CancellationContent({token}:{token:string}) {
   const [result,setResult]=useState<CancelResult|null>(null);const [error,setError]=useState('');const [retry,setRetry]=useState(0);
   useEffect(()=>{
     if(!token)return;const controller=new AbortController();

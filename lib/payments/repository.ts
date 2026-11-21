@@ -50,6 +50,9 @@ export class SupabasePaymentRepository implements PaymentRepository {
   async attachSession(orderId:string,sessionId:string) {
     const {error}=await this.db.rpc('attach_marketplace_checkout',{p_order_id:orderId,p_session_id:sessionId});check(error);
   }
+  async saveCheckoutSpec(orderId:string,spec:Parameters<PaymentRepository['saveCheckoutSpec']>[1]) {
+    const {error}=await this.db.rpc('save_marketplace_checkout_spec',{p_order_id:orderId,p_spec:spec});check(error);
+  }
   async findOrder(id:string) {
     const {data,error}=await this.db.from('marketplace_orders').select('*').eq('id',id).maybeSingle();check(error);return data?order(data):null;
   }

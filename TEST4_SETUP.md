@@ -50,7 +50,7 @@ In the existing project folder, keep real values only in `.env.local`. The provi
 
 Hosted Checkout redirects to Stripe's returned URL, so it does not need Stripe.js in the browser. The official `stripe` SDK runs on the server.
 
-The private Supabase key also derives this app's flow-token and order-proof signing material. The assessment Stripe secret is shared, so it is not used as a private app-signing key. Changing the Supabase key invalidates previously generated onboarding/cancellation links.
+The private Supabase key also derives this app's flow-token and order-proof signing material. The assessment Stripe secret is shared, so it is not used as a private app-signing key. Each order persists its expected proof privately, allowing payment confirmation after key rotation. Changing the Supabase key still invalidates previously generated onboarding/cancellation links; webhook expiration remains available.
 
 Restart the development server after environment changes:
 
@@ -84,7 +84,7 @@ The script registers a **Connect** endpoint for:
 
 It saves the signing secret to `.env.local` without printing it and saves the owned endpoint ID in ignored `.stripe-webhook.json`. Copy `STRIPE_WEBHOOK_SECRET` from your local file into the **Test 4** Vercel environment and redeploy.
 
-Rerunning with matching state reuses the endpoint. If you deliberately need a replacement, `--replace` verifies ownership and disables only this project's previous endpoint. It never deletes another candidate's endpoint.
+Rerunning with matching state reuses the endpoint. If you need a replacement, `--replace` verifies ownership and stages a new endpoint while leaving the previous one enabled. Deploy the new signing secret, confirm successful signed event delivery and paid-order settlement, then disable only the recorded previous owned endpoint IDs in Stripe. Never disable an endpoint belonging to another candidate. A failed creation or local save leaves the working endpoint enabled.
 
 Restore local `APP_URL=http://localhost:3000` if you resume local development. For local webhooks, use Stripe CLI forwarding and its temporary signing secret as described in the assignment; restore the production endpoint's secret when deploying.
 
@@ -117,7 +117,9 @@ The platform fee is 10%, rounded to cents. Stripe processing fees are separate. 
 
 Test cancellation too: Stripe's back/cancel flow expires its session before releasing the reservation. A completed payment is never released just because the buyer opens the cancel URL. Reservations are not released by a local clock alone; the Stripe session must expire or be safely cancelled.
 
-If Stripe times out while creating Checkout, the app keeps the reservation because the provider may already have created a payable session. Its owned expiration webhook can recover the reservation even if the session ID was not saved before the interruption. A server crash before any session exists requires administrative reconciliation; never manually release a reservation without checking Stripe first.
+If Stripe times out while creating Checkout, the app keeps the reservation because the provider may already have created a payable session. The exact request parameters are saved privately before calling Stripe. An interrupted session write can be recovered by replaying that same idempotent operation within 23 hours, independently establishing the provider session ID before accepting its webhook. Copied metadata alone cannot release an item. Checkout creation tracks actual SDK attempts, keeps a reservation when a later rejection follows an uncertain attempt, uses a 35-minute expiry (including a margin above Stripe's minimum), and disables Adaptive Pricing to keep payments in USD. See [Stripe's error and retry guidance](https://docs.stripe.com/error-low-level).
+
+After the recovery window, a provider error that cannot be reconciled, or a server crash before any Stripe session exists, administrative reconciliation may be needed. Never manually release a reservation without checking Stripe first. Such failures keep the item reserved and return a retriable webhook error rather than silently accepting an unknown result.
 
 ## 7. Automated verification
 

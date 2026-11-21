@@ -1,9 +1,14 @@
 import { isUuid } from '../validation';
-import { verifyOrderProof } from './tokens';
+import { timingSafeEqual } from 'node:crypto';
+import { PaymentError } from './types';
 import { sellerFromAccount } from './onboarding';
 import type { PaymentContext, PaymentEvent } from './types';
 function record(value:unknown):Record<string,unknown>|null {
   return value!==null&&typeof value==='object'&&!Array.isArray(value)?value as Record<string,unknown>:null;
+}
+function matchingProof(provided:unknown,expected:unknown):boolean {
+  return typeof provided==='string'&&typeof expected==='string'&&/^[a-f0-9]{64}$/.test(provided)&&
+    /^[a-f0-9]{64}$/.test(expected)&&timingSafeEqual(Buffer.from(provided,'hex'),Buffer.from(expected,'hex'));
 }
 export async function processStripeEvent(event:PaymentEvent,ctx:PaymentContext):Promise<string> {
   if(event.livemode) return 'ignored';
@@ -24,10 +29,21 @@ export async function processStripeEvent(event:PaymentEvent,ctx:PaymentContext):
   const order=await ctx.repo.findOrder(orderId);
   if(!order||event.account!==order.stripe_account_id||object.amount_total!==order.amount_cents||object.currency!==order.currency||
     (order.stripe_checkout_session_id!==null&&order.stripe_checkout_session_id!==object.id)||
-    !verifyOrderProof(String(metadata.marketplace_order_proof??''),order,ctx.secret))return 'ignored';
+    !matchingProof(metadata.marketplace_order_proof,order.checkout_spec?.proof))return 'ignored';
+  if(!order.stripe_checkout_session_id) {
+    const spec=order.checkout_spec;
+    if(!spec||spec.appId!==ctx.appId)return 'ignored';
+    const age=Math.floor(Date.now()/1000)-spec.createdAt;
+    if(!Number.isFinite(age)||age<0||age>23*3600)throw new PaymentError('Checkout requires administrative reconciliation.',503);
+    // Metadata is visible to all holders of the shared test key. Independently
+    // recover our original idempotent operation before trusting an event's ID.
+    const original=await ctx.gateway.createSession({...spec,order});
+    if(original.livemode||!original.id.startsWith('cs_test_'))throw new PaymentError('Checkout recovery failed.',503);
+    await ctx.repo.attachSession(order.id,original.id);
+    if(original.id!==object.id)return 'ignored';
+  }
   if(event.type==='checkout.session.expired') {
     if(object.status==='expired'&&order.status==='pending') {
-      if(!order.stripe_checkout_session_id)await ctx.repo.attachSession(order.id,object.id);
       await ctx.repo.releaseOrder(order.id,object.id);
     }
     return 'expired';

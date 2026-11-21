@@ -11,6 +11,9 @@ type Receipt={status:'pending'|'paid'|'expired';listingId:string;title:string;am
 export default function SuccessPage(){return <Suspense fallback={<PaymentShell title="Confirming payment"><p className="mt-4 text-sm text-slate-500">Loading confirmation...</p></PaymentShell>}><SuccessContent/></Suspense>;}
 function SuccessContent() {
   const params=useSearchParams();const sessionId=params.get('session_id')??'';
+  return <ReceiptContent key={sessionId} sessionId={sessionId}/>;
+}
+function ReceiptContent({sessionId}:{sessionId:string}) {
   const [receipt,setReceipt]=useState<Receipt|null>(null);const [error,setError]=useState('');const [slow,setSlow]=useState(false);const [retry,setRetry]=useState(0);
   const valid=/^cs_test_[A-Za-z0-9_]+$/.test(sessionId);
   useEffect(()=>{

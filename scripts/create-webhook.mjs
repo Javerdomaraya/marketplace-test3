@@ -1,6 +1,7 @@
 import Stripe from 'stripe';
 import { createHash } from 'node:crypto';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
+import { stageOwnedWebhook } from './webhook-state.mjs';
 
 async function main() {
   const key=process.env.STRIPE_SECRET_KEY??'';
@@ -14,30 +15,23 @@ async function main() {
   const target=base.origin+'/api/stripe/webhook';
   const statePath='.stripe-webhook.json';
   const previous=existsSync(statePath)?JSON.parse(readFileSync(statePath,'utf8')):null;
-  if(previous) {
-    if(previous.appId!==appId)throw new Error('This local webhook state belongs to a different project.');
-    const endpoint=await stripe.webhookEndpoints.retrieve(previous.id);
-    if(endpoint.metadata.marketplace_app_id!==appId||endpoint.metadata.managed_by!=='marketplace-test4')throw new Error('Endpoint ownership could not be verified. Nothing changed.');
-    const secretHash=createHash('sha256').update(process.env.STRIPE_WEBHOOK_SECRET??'').digest('hex');
-    if(endpoint.url===target&&endpoint.status==='enabled'&&secretHash===previous.secretHash&&!process.argv.includes('--replace')) {
-      console.log('Owned webhook is already configured: '+endpoint.id);return;
-    }
-    if(!process.argv.includes('--replace'))throw new Error('An owned endpoint exists with a different URL or secret. Use --replace only to replace this project endpoint.');
-    await stripe.webhookEndpoints.update(endpoint.id,{disabled:true});
-  }
-  const endpoint=await stripe.webhookEndpoints.create({
-    url:target,connect:true,enabled_events:['checkout.session.completed','checkout.session.expired','account.updated'],
-    metadata:{marketplace_app_id:appId,managed_by:'marketplace-test4'},
+  const result=await stageOwnedWebhook({stripe,appId,target,previous,
+    secretHash:createHash('sha256').update(process.env.STRIPE_WEBHOOK_SECRET??'').digest('hex'),
+    replace:process.argv.includes('--replace'),
+    save:async({endpoint,previousIds})=>{
+      // Write recovery state before changing the active local environment.
+      writeFileSync(statePath,JSON.stringify({id:endpoint.id,url:target,appId,previousIds,secretHash:createHash('sha256').update(endpoint.secret).digest('hex')},null,2)+'\n');
+      let env=existsSync('.env.local')?readFileSync('.env.local','utf8'):'';
+      const entry='STRIPE_WEBHOOK_SECRET='+endpoint.secret;
+      env=/^STRIPE_WEBHOOK_SECRET=.*$/m.test(env)?env.replace(/^STRIPE_WEBHOOK_SECRET=.*$/m,entry):env.trimEnd()+'\n'+entry;
+      writeFileSync('.env.local',env.trimEnd()+'\n');
+    },
   });
-  if(!endpoint.secret)throw new Error('Stripe did not return a signing secret.');
-  let env=existsSync('.env.local')?readFileSync('.env.local','utf8'):'';
-  const entry='STRIPE_WEBHOOK_SECRET='+endpoint.secret;
-  env=/^STRIPE_WEBHOOK_SECRET=.*$/m.test(env)?env.replace(/^STRIPE_WEBHOOK_SECRET=.*$/m,entry):env.trimEnd()+'\n'+entry;
-  writeFileSync('.env.local',env.trimEnd()+'\n');
-  writeFileSync(statePath,JSON.stringify({id:endpoint.id,url:target,appId,secretHash:createHash('sha256').update(endpoint.secret).digest('hex')},null,2)+'\n');
-  console.log('Created this project Connect webhook: '+endpoint.id);
+  if(result.reused){console.log('Owned webhook is already configured: '+result.id);return;}
+  console.log('Created this project Connect webhook: '+result.id);
   console.log('Signing secret saved privately as STRIPE_WEBHOOK_SECRET in .env.local. It was not printed.');
   console.log('Copy that variable into your Test 4 Vercel project, then redeploy.');
+  if(result.previousIds.length)console.log('Previous owned endpoints remain enabled: '+result.previousIds.join(', ')+'. Disable them only after successful signed delivery with the new production secret.');
 }
 main().catch(error=>{
   console.error(error&&typeof error==='object'&&'type' in error?'Stripe refused webhook registration. Check sandbox access and configuration.':error instanceof Error?error.message:'Webhook registration failed.');

@@ -1,7 +1,7 @@
 'use client';
 import { Suspense, useEffect, useRef, useState, type FormEvent } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { ArrowUpRight, CheckCircle2, LoaderCircle } from 'lucide-react';
+import { ArrowUpRight, LoaderCircle } from 'lucide-react';
 import { PaymentShell } from '../../components/payments/payment-shell';
 import { Input } from '../../components/ui/input';
 import { Button } from '../../components/ui/button';
@@ -28,7 +28,7 @@ function ConnectForm({initialEmail,status}:{initialEmail:string;status:string}) 
   }
   return <PaymentShell title="Connect with Stripe">
     <p className="mt-3 text-sm leading-6 text-slate-600">Enable sandbox purchases for your listings. Enter the same email you used when creating them, then complete Stripe&apos;s hosted seller setup.</p>
-    {status==='complete'&&<div role="status" className="mt-5 rounded-xl border border-green-200 bg-green-50 p-4 text-sm text-green-800"><CheckCircle2 size={21} className="mb-2"/>Stripe confirmed that your account can accept sandbox payments. Your matching available listings can now show Buy Now.</div>}
+    {status==='complete'&&<p role="status" className="mt-5 rounded-xl bg-blue-50 p-4 text-sm leading-6 text-blue-900">You returned from seller setup. Open your listing to check payment availability. Buy Now appears only when the server has verified your seller account.</p>}
     {status==='pending'&&<p role="status" className="mt-5 rounded-xl bg-amber-50 p-4 text-sm leading-6 text-amber-900">Stripe still needs more information or time to enable payments. Enter your seller email below to continue setup.</p>}
     <form onSubmit={submit} className="mt-7 space-y-4">
       <div><label htmlFor="seller-connect-email" className="mb-2 block text-sm font-semibold">Seller email</label><Input id="seller-connect-email" type="email" autoComplete="email" maxLength={254} required placeholder="Same email as your listing" value={email} onChange={event=>setEmail(event.target.value)}/></div>

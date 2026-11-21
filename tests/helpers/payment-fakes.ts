@@ -21,6 +21,7 @@ export class FakeRepository implements PaymentRepository {
     return { ...this.order };
   }
   async attachSession(id:string, session:string) { if(this.attachFails) throw new Error('DB unavailable'); this.order!.stripe_checkout_session_id=session; }
+  async saveCheckoutSpec(id:string,spec:Omit<CheckoutSpec,'order'>) { if(this.order?.id!==id)throw new Error('Unknown order');this.order.checkout_spec={...spec}; }
   async findOrder(id:string) { return this.order?.id === id ? this.order : null; }
   async findOrderBySession(id:string) { return this.order?.stripe_checkout_session_id === id ? this.order : null; }
   async releaseOrder(id:string, session?:string) {
@@ -54,5 +55,8 @@ export function fakeContext(): PaymentContext & {repo:FakeRepository;gateway:Fak
   return {repo:new FakeRepository(),gateway:new FakeGateway(),secret:'sk_test_unit_signing_only',siteUrl:'http://localhost:3000',appId:'own-app'};
 }
 export async function pendingOrder() {
-  const ctx=fakeContext(); const order=await ctx.repo.reserveOrder(listingId,orderId); await ctx.repo.attachSession(orderId,'cs_test_own'); ctx.gateway.session.metadata.marketplace_order_proof=createOrderProof(order,ctx.secret); return ctx;
+  const ctx=fakeContext(); const order=await ctx.repo.reserveOrder(listingId,orderId);
+  const proof=createOrderProof(order,ctx.secret);
+  await ctx.repo.saveCheckoutSpec(orderId,{proof,appId:ctx.appId,createdAt:Math.floor(Date.now()/1000),expiresAt:Math.floor(Date.now()/1000)+2100,successUrl:'http://localhost:3000/success',cancelUrl:'http://localhost:3000/cancel'});
+  await ctx.repo.attachSession(orderId,'cs_test_own'); ctx.gateway.session.metadata.marketplace_order_proof=proof; return ctx;
 }

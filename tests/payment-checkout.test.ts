@@ -9,6 +9,8 @@ test('Checkout uses the reserved database amount, application fee, and connected
   const spec=ctx.gateway.specs[0]; assert.equal(spec.order.amount_cents,7000); assert.equal(spec.order.fee_cents,700);
   assert.equal(spec.order.stripe_account_id,'acct_testOwn'); assert.match(spec.successUrl,/session_id=\{CHECKOUT_SESSION_ID\}/);
   assert.equal(ctx.repo.listing.status,'reserved'); assert.equal(ctx.repo.order!.stripe_checkout_session_id,'cs_test_own');
+  assert.ok(spec.expiresAt-Math.floor(Date.now()/1000)>=2090,'allow transit time above Stripe minimum');
+  assert.equal(ctx.repo.order!.checkout_spec?.proof,spec.proof);
 });
 test('sold, reserved, unknown, and unready listings cannot start Checkout',async()=>{
   for(const status of ['sold','reserved'] as const){const ctx=fakeContext();ctx.repo.listing.status=status;await assert.rejects(()=>createCheckout(listingId,ctx));assert.equal(ctx.gateway.specs.length,0);}
