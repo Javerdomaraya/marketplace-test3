@@ -21,7 +21,7 @@ Browser (Next.js / React)
                                      Resend -> seller inbox
 ```
 
-The publishable key is public by design. Access control comes from database grants, RLS, constraints, and Storage policy settings. Only the optional function uses privileged database credentials.
+The publishable key is public by design. Access control comes from database grants, RLS, constraints, and Storage policy settings. The optional notification function and Test 4 server payment routes use privileged database credentials; those credentials never belong in the browser.
 
 ## Source map
 

@@ -14,6 +14,8 @@ Built with **Next.js 16.4.6 (App Router), React 19.3, TypeScript, Tailwind CSS 4
 | [SETUP.md](SETUP.md) | Local installation, Supabase configuration, optional email setup, Vercel deployment, and troubleshooting |
 | [FEATURES.md](FEATURES.md) | User flows, validation rules, categories, and current limitations |
 | [DEVELOPMENT_GUIDE.md](DEVELOPMENT_GUIDE.md) | Architecture, database and access model, code organization, testing, and maintenance |
+| [INTERVIEW_NOTES.md](INTERVIEW_NOTES.md) | Project walkthrough, payment decisions, debugging example and practice answers |
+| [INTERVIEW_CHEAT_SHEET.md](INTERVIEW_CHEAT_SHEET.md) | Short review of the main flows, evidence, limitations and code to explain |
 
 ## Assessment requirements
 
