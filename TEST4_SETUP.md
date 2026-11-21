@@ -1,6 +1,6 @@
 # Test 4: Stripe Connect setup and explanation
 
-This branch extends the passed Marketplace with **sandbox-only** payments. The implementation uses direct charges on each seller's connected account and a **10% application fee**. No real-money keys are accepted.
+This branch extends the passed Marketplace with **sandbox-only** payments. The implementation uses direct charges on each seller's connected account and a **10% application fee**. Listing prices and order accounting use USD; new hosted Checkout sessions enable eligible local-currency choices through Stripe Adaptive Pricing. No real-money keys are accepted.
 
 ## What changed
 
@@ -117,9 +117,19 @@ No login or email-ownership verification is added because the assessment explici
 
 The platform fee is 10%, rounded to cents. Stripe processing fees are separate. Buy Now supports USD amounts from $0.50 to $999,999.99; the original broader listing price validation remains for browsing/creation.
 
+### Currency choice and buyer details
+
+New Checkout sessions enable Stripe Adaptive Pricing, allowing eligible Philippine buyers to choose PHP or the original USD price. Stripe determines eligibility and shows the exchange rate and any conversion fee. The selector can vary by buyer location, seller settlement settings and Stripe account configuration. The Marketplace does not use a fixed peso exchange rate.
+
+Stripe collects the buyer email, card number, expiry and CVC. The app explicitly requests an individual buyer name. Billing country/region is collected by Stripe as needed, without forcing an additional full street address. Optional “save my information” behavior remains with Stripe Link; the app does not store card numbers or require a buyer to save a card before paying. Stripe controls the exact labels, layout and wallet visibility.
+
+The Checkout Session and PaymentIntent continue to report the original USD integration amount. PHP payment details appear separately as `presentment_details`; the signed webhook still requires the exact original USD amount, currency, seller account and 10% application fee. See [Adaptive Pricing](https://docs.stripe.com/payments/currencies/localize-prices/adaptive-pricing.md?payment-ui=stripe-hosted) and [Link saving](https://docs.stripe.com/payments/link/link-payment-integrations).
+
+New orders persist `checkoutVersion: 2` in their private immutable JSONB specification. Existing unversioned orders replay their original USD-only options when recovering an interrupted request. This avoids changing Stripe parameters under an existing idempotency key. No additional SQL migration is required. After deployment, start a fresh Checkout session to see the new options; existing sessions keep their old configuration.
+
 Test cancellation too: Stripe's back/cancel flow expires its session before releasing the reservation. A completed payment is never released just because the buyer opens the cancel URL. Reservations are not released by a local clock alone; the Stripe session must expire or be safely cancelled.
 
-If Stripe times out while creating Checkout, the app keeps the reservation because the provider may already have created a payable session. The exact request parameters are saved privately before calling Stripe. An interrupted session write can be recovered by replaying that same idempotent operation within 23 hours, independently establishing the provider session ID before accepting its webhook. Copied metadata alone cannot release an item. Checkout creation tracks actual SDK attempts, keeps a reservation when a later rejection follows an uncertain attempt, uses a 35-minute expiry (including a margin above Stripe's minimum), and disables Adaptive Pricing to keep payments in USD. See [Stripe's error and retry guidance](https://docs.stripe.com/error-low-level).
+If Stripe times out while creating Checkout, the app keeps the reservation because the provider may already have created a payable session. The exact request parameters are saved privately before calling Stripe. An interrupted session write can be recovered by replaying that same idempotent operation within 23 hours, independently establishing the provider session ID before accepting its webhook. Copied metadata alone cannot release an item. Checkout creation tracks actual SDK attempts, keeps a reservation when a later rejection follows an uncertain attempt, uses a 35-minute expiry (including a margin above Stripe's minimum), and preserves each order's versioned localization settings. See [Stripe's error and retry guidance](https://docs.stripe.com/error-low-level).
 
 After the recovery window, a provider error that cannot be reconciled, or a server crash before any Stripe session exists, administrative reconciliation may be needed. Never manually release a reservation without checking Stripe first. Such failures keep the item reserved and return a retriable webhook error rather than silently accepting an unknown result.
 

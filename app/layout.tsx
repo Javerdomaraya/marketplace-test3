@@ -12,5 +12,5 @@ export const metadata: Metadata = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return <html lang="en"><body className={`${geist.className} flex min-h-screen flex-col bg-[#f2f3f5] text-slate-900 antialiased`}><SiteHeader/>{children}<SiteFooter/></body></html>;
+  return <html lang="en" data-scroll-behavior="smooth"><body className={`${geist.className} flex min-h-screen flex-col bg-[#f2f3f5] text-slate-900 antialiased`}><SiteHeader/>{children}<SiteFooter/></body></html>;
 }

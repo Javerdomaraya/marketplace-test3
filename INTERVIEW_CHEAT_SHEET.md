@@ -50,6 +50,7 @@ Cancel → expire Stripe session first → release item
 - Direct charges are implemented; do not describe destination transfers as your design.
 - The fee is separate from Stripe processing fees. A sandbox charge does not prove a real bank payout.
 - The success page polls; an already-open listing is not automatically subscribed to payment changes.
+- New Checkout sessions enable eligible PHP/USD choice through Adaptive Pricing and require an individual buyer name. Orders and fee verification remain USD; PHP details are reported separately by Stripe. Versioned options preserve old Checkout retries.
 
 ## Your debugging story
 
@@ -57,9 +58,9 @@ Cancel → expire Stripe session first → release item
 
 ## Evidence and current status
 
-Last verified application revision: `798a97a`. **61 tests, lint and a production build passed.** Hosted Supabase/Stripe sandbox onboarding, payment, 10% fee, signed webhook settlement and cancellation were checked.
+Before the local-currency update, **61 tests, lint and a production build passed.** Hosted Supabase/Stripe sandbox onboarding, payment, 10% fee, signed webhook settlement and cancellation were checked. Use the latest test/build output for the updated revision.
 
-**Still pending at note creation:** separate public Test 4 Vercel deployment, permanent Connect webhook and a purchase through that public deployment. Vercel CLI was logged out. Update this status after verification; Test 3 remains on `main`.
+**Deployment follow-up:** the Stripe branch is now hosted at `marketplace-test3.vercel.app`; its production `APP_URL` mismatch requires correction/redeployment. The currency update still needs publishing and deployment. Permanent webhook setup and a verified public purchase remain pending; original Test 3 source remains on `main`.
 
 ## Code to open
 

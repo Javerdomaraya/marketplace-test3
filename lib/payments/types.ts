@@ -35,6 +35,7 @@ export type PaymentIntent = {
   application_fee_amount: number | null; livemode: boolean;
 };
 export type CheckoutSpec = {
+  checkoutVersion?: 2;
   order: Order; successUrl: string; cancelUrl: string; appId: string; proof: string; expiresAt: number; createdAt: number;
 };
 export interface PaymentGateway {

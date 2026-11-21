@@ -1,6 +1,6 @@
 # Marketplace interview notes
 
-Study guide for Javer's Test 3 Marketplace and Test 4 Stripe Connect work. Based on branch `test4-stripe-connect`, application revision `798a97a`, and checks completed on November 21, 2026.
+Study guide for Javer's Test 3 Marketplace and Test 4 Stripe Connect work. Based on branch `test4-stripe-connect` and updated on November 21, 2026 for local-currency hosted Checkout.
 
 Start with [the quick review sheet](INTERVIEW_CHEAT_SHEET.md). Use the sample answers to practise in your own words. Explain only what you understand and have actually verified.
 
@@ -134,6 +134,12 @@ This is a **direct charge**, not a destination-charge implementation. Do not say
 
 Integer amounts avoid floating-point errors when calculating currency. `priceToCents` validates the decimal input and converts it exactly; the fee is rounded to the nearest cent. Checkout accepts the app's USD range of $0.50–$999,999.99.
 
+### How can a buyer choose pesos?
+
+New sessions enable Stripe Adaptive Pricing. Eligible Philippine buyers can choose PHP alongside the original USD price; Stripe provides the conversion rate and displays any conversion fee. Listing prices, order snapshots and payment verification remain in USD. Stripe reports the local amount separately as `presentment_details`, so adding currency choice does not mean trusting a browser-supplied price or removing fee checks. The exact selector depends on Stripe eligibility and location.
+
+The new Checkout options also require the buyer's individual name and permit Stripe's optional Link UI. Stripe handles email/card/billing-country fields and saved information; the app does not store card numbers. Old orders have no `checkoutVersion`; their recovery must still use the original parameters. New orders save `checkoutVersion: 2` before calling Stripe, preventing a retry from silently changing localization/name settings under the same idempotency key.
+
 ## 8. Reliability and security questions
 
 **Why not mark Sold on the success page?** A redirect or a typed success URL is not payment evidence. The server requires verified payment data. The buyer can also close their browser before a redirect, so fulfillment must work independently of that page.
@@ -166,13 +172,13 @@ Integer amounts avoid floating-point errors when calculating currency. `priceToC
 
 ## 10. What was tested, and what remains
 
-Last recorded application verification: **61 tests passed**, lint passed and a normal production build passed. Those checks were performed on the application revision above; this documentation update does not change runtime code.
+Before the local-currency update, **61 tests passed**, lint passed and a normal production build passed. The updated suite adds legacy-option replay and PHP-presentment settlement regressions; see the current `npm test` result when discussing the latest revision.
 
 Coverage includes validation, pagination, real SQL/RLS execution through PGlite, reservation/settlement rules, signed tokens, invalid/shared-sandbox events, real Stripe signature verification, SDK request serialization, timeout recovery and webhook replacement behavior. PGlite is single-connection; those tests do not independently demonstrate a multi-connection race on hosted Postgres.
 
 Hosted Supabase and Stripe sandbox checks also verified onboarding, purchases, the 10% fee, signed-event settlement, Sold status and cancellation. Local screenshots were captured from the production build. The missed local events were recovered as described above.
 
-**At note creation:** the Test 4 branch is public, but Vercel CLI is logged out. A separate public Test 4 deployment, permanent Connect webhook and purchase on that deployment still require completion. Update this paragraph after doing those checks. Preserve the passed Test 3 deployment attached to `main`.
+**Deployment follow-up:** the user deployed the Stripe branch to `marketplace-test3.vercel.app`. A production origin mismatch then caused Checkout 403 responses; `APP_URL` must match that exact public origin and the change requires redeployment. The local-currency update still needs publishing/deployment and public acceptance. Permanent production webhook setup and a complete payment through that webhook remain unverified. The original Test 3 source remains on `main`.
 
 Commands to explain, rather than blindly rerun during an interview:
 

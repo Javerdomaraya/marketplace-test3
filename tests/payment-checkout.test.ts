@@ -7,6 +7,8 @@ test('Checkout uses the reserved database amount, application fee, and connected
   const ctx=fakeContext(); const result=await createCheckout(listingId,ctx,orderId);
   assert.equal(result.url,'https://checkout.stripe.com/test');
   const spec=ctx.gateway.specs[0]; assert.equal(spec.order.amount_cents,7000); assert.equal(spec.order.fee_cents,700);
+  assert.equal(spec.checkoutVersion,2);
+  assert.equal(ctx.repo.order!.checkout_spec?.checkoutVersion,2,'persist Checkout options before the provider call for exact recovery');
   assert.equal(spec.order.stripe_account_id,'acct_testOwn'); assert.match(spec.successUrl,/session_id=\{CHECKOUT_SESSION_ID\}/);
   assert.equal(ctx.repo.listing.status,'reserved'); assert.equal(ctx.repo.order!.stripe_checkout_session_id,'cs_test_own');
   assert.ok(spec.expiresAt-Math.floor(Date.now()/1000)>=2090,'allow transit time above Stripe minimum');

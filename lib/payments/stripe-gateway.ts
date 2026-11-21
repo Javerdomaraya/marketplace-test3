@@ -36,13 +36,19 @@ export class StripeGateway implements PaymentGateway {
   }
   async createSession(spec:CheckoutSpec) {
     const {order}=spec;
+    // Recovery must replay the original request, including pre-localization orders.
+    const hostedOptions:Pick<Stripe.Checkout.SessionCreateParams,'adaptive_pricing'|'name_collection'|'wallet_options'>=spec.checkoutVersion===2?{
+      adaptive_pricing:{enabled:true},
+      name_collection:{individual:{enabled:true,optional:false}},
+      wallet_options:{link:{display:'auto'}},
+    }:{adaptive_pricing:{enabled:false}};
     const metadata={marketplace_app_id:spec.appId,marketplace_order_id:order.id,marketplace_listing_id:order.listing_id,marketplace_order_proof:spec.proof};
     const idempotencyKey='marketplace-checkout-'+order.id;
     let attempts=0;
     const onRequest=(event:{idempotency_key?:string})=>{if(event.idempotency_key===idempotencyKey)attempts++;};
     this.stripe.on('request',onRequest);
     try { return session(await this.stripe.checkout.sessions.create({
-      mode:'payment',allowed_payment_method_types:['card'],adaptive_pricing:{enabled:false},client_reference_id:order.id,metadata,
+      mode:'payment',allowed_payment_method_types:['card'],...hostedOptions,client_reference_id:order.id,metadata,
       line_items:[{quantity:1,price_data:{currency:order.currency,unit_amount:order.amount_cents,product_data:{name:order.listing_title}}}],
       payment_intent_data:{application_fee_amount:order.fee_cents,metadata},
       success_url:spec.successUrl,cancel_url:spec.cancelUrl,expires_at:spec.expiresAt,

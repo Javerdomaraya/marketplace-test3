@@ -2,6 +2,8 @@
 
 This branch adds sandbox Stripe Connect onboarding, Buy Now, a 10% application fee, webhook-confirmed orders, and Sold listings. Start with [TEST4_SETUP.md](TEST4_SETUP.md) for the migration, server credentials, webhook, and Test 4 submission steps. The passed Test 3 source remains on `main`.
 
+New hosted Checkout sessions also enable eligible local-currency choices (such as PHP alongside USD), collect the buyer's individual name, and leave optional information saving with Stripe Link. USD remains the listing and order-accounting currency.
+
 A Facebook-inspired mini-marketplace where visitors can publish an item, browse and filter listings, open an item's detail page, and save an inquiry for the seller. No account or login is required.
 
 Built with **Next.js 16.4.6 (App Router), React 19.3, TypeScript, Tailwind CSS 4, shadcn-style UI components, Lucide icons, Supabase Postgres, and Supabase Storage**. Vercel is the intended deployment target.

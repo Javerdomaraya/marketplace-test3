@@ -12,6 +12,23 @@ test('a paid matching direct charge settles exactly once',async()=>{
   const e=event(ctx.gateway.session);await processStripeEvent(e,ctx);await processStripeEvent(e,ctx);
   assert.equal(ctx.repo.order!.status,'paid');assert.equal(ctx.repo.listing.status,'sold');assert.equal(ctx.repo.completed,1);
 });
+
+test('PHP presentment settles against the original USD payment and never replaces amount or fee checks',async()=>{
+  const presentment_details={presentment_amount:412300,presentment_currency:'php'};
+  const ctx=await pendingOrder();ctx.gateway.session.payment_status='paid';
+  await processStripeEvent(event({...ctx.gateway.session,presentment_details}),ctx);
+  assert.equal(ctx.repo.order!.status,'paid');assert.equal(ctx.repo.listing.status,'sold');
+  for(const mismatch of ['amount','currency','fee'] as const){
+    const invalid=await pendingOrder();invalid.gateway.session.payment_status='paid';
+    const session={...invalid.gateway.session,presentment_details};
+    if(mismatch==='amount')session.amount_total=1;
+    if(mismatch==='currency')session.currency='php';
+    if(mismatch==='fee')invalid.gateway.intent.application_fee_amount=1;
+    await processStripeEvent(event(session),invalid);
+    assert.equal(invalid.repo.order!.status,'pending',mismatch);
+    assert.equal(invalid.repo.listing.status,'reserved',mismatch);
+  }
+});
 test('unpaid, live, foreign-account, and mismatched shared-sandbox events never settle',async()=>{
   for(const change of ['unpaid','live','account','amount','currency','fee','namespace','order','proof'] as const){
     const ctx=await pendingOrder();ctx.gateway.session.payment_status='paid';

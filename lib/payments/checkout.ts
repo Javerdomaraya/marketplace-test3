@@ -23,6 +23,7 @@ export async function createCheckout(listingId:string, ctx:PaymentContext, purch
   try {
     const createdAt=Math.floor(Date.now()/1000);
     const spec={
+      checkoutVersion:2 as const,
       appId:ctx.appId,proof:createOrderProof(order,ctx.secret),createdAt,expiresAt:createdAt+2100,
       successUrl:ctx.siteUrl+'/checkout/success?session_id={CHECKOUT_SESSION_ID}',
       cancelUrl:ctx.siteUrl+'/checkout/cancel?token='+encodeURIComponent(signFlowToken('cancel',order.id,ctx.secret)),

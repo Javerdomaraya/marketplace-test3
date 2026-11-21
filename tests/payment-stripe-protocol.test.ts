@@ -6,14 +6,14 @@ import { pendingOrder } from './helpers/payment-fakes';
 import { fakeContext, listingId, orderId } from './helpers/payment-fakes';
 import { createCheckout } from '../lib/payments/checkout';
 import { beginOnboarding } from '../lib/payments/onboarding';
-test('Stripe SDK sends a direct-charge Checkout request with the reserved price and platform fee',async()=>{
+test('new hosted Checkout offers local currency and buyer name while preserving the direct charge and platform fee',async()=>{
   const ctx=await pendingOrder();let captured:{headers:Headers;body:string}|null=null;
   const client=new Stripe('sk_test_unit_only',{maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient(async(_url,init)=>{
     captured={headers:new Headers(init?.headers),body:String(init?.body??'')};
     return new Response(JSON.stringify({id:'cs_test_protocol',url:'https://checkout.stripe.com/test',status:'open',payment_status:'unpaid',livemode:false}),{status:200,headers:{'content-type':'application/json'}});
   })});
   const gateway=new StripeGateway(client);
-  await gateway.createSession({order:ctx.repo.order!,appId:ctx.appId,proof:'own-proof',createdAt:1999997900,expiresAt:2000000000,successUrl:'https://own.example/success',cancelUrl:'https://own.example/cancel'});
+  await gateway.createSession({checkoutVersion:2,order:ctx.repo.order!,appId:ctx.appId,proof:'own-proof',createdAt:1999997900,expiresAt:2000000000,successUrl:'https://own.example/success',cancelUrl:'https://own.example/cancel'});
   const request=captured as unknown as {headers:Headers;body:string};assert.ok(request);
   assert.equal(request.headers.get('stripe-account'),'acct_testOwn');
   const params=new URLSearchParams(request.body);
@@ -22,7 +22,27 @@ test('Stripe SDK sends a direct-charge Checkout request with the reserved price 
   assert.equal(params.get('metadata[marketplace_order_proof]'),'own-proof');
   assert.equal(params.get('allowed_payment_method_types[0]'),'card');
   assert.equal(params.get('expires_at'),'2000000000');
+  assert.equal(params.get('adaptive_pricing[enabled]'),'true');
+  assert.equal(params.get('name_collection[individual][enabled]'),'true');
+  assert.equal(params.get('name_collection[individual][optional]'),'false');
+  assert.equal(params.get('wallet_options[link][display]'),'auto');
+  assert.equal(params.get('billing_address_collection'),null,'let Stripe collect country/billing fields without forcing a street address');
+  assert.equal(params.get('customer_creation'),null,'do not force a Marketplace customer wallet');
+  assert.equal(params.get('saved_payment_method_options[payment_method_save]'),null);
+  assert.equal(params.get('payment_intent_data[setup_future_usage]'),null,'optional Link saving does not force future-charge consent');
+});
+
+test('unversioned orders replay the exact legacy USD Checkout options',async()=>{
+  const ctx=await pendingOrder();let body='';
+  const client=new Stripe('sk_test_unit_only',{maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient(async(_url,init)=>{
+    body=String(init?.body??'');return new Response(JSON.stringify({id:'cs_test_legacy',url:'https://checkout.stripe.com/test',status:'open',payment_status:'unpaid',livemode:false}),{status:200});
+  })});
+  await new StripeGateway(client).createSession({...ctx.repo.order!.checkout_spec!,order:ctx.repo.order!});
+  const params=new URLSearchParams(body);
   assert.equal(params.get('adaptive_pricing[enabled]'),'false');
+  assert.equal(params.get('allowed_payment_method_types[0]'),'card');
+  assert.equal(params.get('name_collection[individual][enabled]'),null);
+  assert.equal(params.get('wallet_options[link][display]'),null);
 });
 test('a lost Stripe response cannot be followed by a retry rejection that releases inventory',async()=>{
   const ctx=fakeContext();let attempts=0;

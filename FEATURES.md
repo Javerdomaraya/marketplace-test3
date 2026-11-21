@@ -41,7 +41,7 @@ Leaving the create form clears its draft fields, selected photo, preview, and fe
 
 Client validation gives immediate feedback. Database constraints enforce the persisted text, numeric, category, email, and image-path rules; the Storage bucket enforces its MIME-type and size restrictions. Accepted images are not scanned or moderated by this app.
 
-Prices display in **USD**. There is no currency selector or free/zero-price mode.
+Marketplace prices display in **USD**. New Stripe-hosted Checkout sessions enable eligible local-currency choices, including PHP for Philippine buyers, through Adaptive Pricing. There is no currency selector in the listing form and no free/zero-price mode.
 
 ## Browse, filter, and search
 
@@ -124,7 +124,7 @@ The public key is used with database privileges and RLS. Privileged database/ema
 
 ## Current boundaries
 
-Test 4 adds seller onboarding at `/connect`, Buy Now for eligible available listings, direct-charge sandbox Checkout with a 10% fee, private orders, and webhook-confirmed Sold status. Checkout reserves one item transactionally. Cancellation confirms Stripe expiration before releasing it; the success page waits for the saved paid order. USD Checkout supports $0.50–$999,999.99. See [TEST4_SETUP.md](TEST4_SETUP.md) for configuration and live acceptance checks.
+Test 4 adds seller onboarding at `/connect`, Buy Now for eligible available listings, direct-charge sandbox Checkout with a 10% fee, private orders, and webhook-confirmed Sold status. Checkout reserves one item transactionally. Cancellation confirms Stripe expiration before releasing it; the success page waits for the saved paid order. USD base prices support $0.50–$999,999.99. New hosted sessions enable Adaptive Pricing, require an individual buyer name and leave optional saved-information handling with Stripe Link. Currency choices and exact form layout depend on Stripe eligibility. See [TEST4_SETUP.md](TEST4_SETUP.md) for configuration and live acceptance checks.
 
 - No marketplace login, profiles, seller dashboard, listing edit/delete, real-money payments, cart, favorites, or chat.
 - One image per listing; no photo gallery or batch creation.
