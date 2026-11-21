@@ -6,7 +6,7 @@ This branch extends the passed Marketplace with **sandbox-only** payments. The i
 
 | Part | What it does |
 | --- | --- |
-| Connect with Stripe | Matches the seller's normalized listing email, saves an Express connected account, and opens Stripe-hosted onboarding |
+| Connect with Stripe | Matches the seller's normalized listing email, creates an Accounts v2 merchant account with Stripe-managed risk, saves its ID, and opens Stripe-hosted onboarding |
 | Buy Now | Checks current seller readiness and creates hosted Checkout from the price saved in Supabase |
 | Reservation | Locks the listing in a database transaction so a second buyer cannot open another active checkout |
 | Confirmation | A signed webhook verifies the account, price, fee, payment status, and this app's metadata proof before saving paid/Sold |
@@ -97,7 +97,9 @@ Restore local `APP_URL=http://localhost:3000` if you resume local development. F
 5. Return to the marketplace. The server retrieves fresh Stripe readiness flags.
 6. An available listing for that email should show **Buy Now** once details, charges, and payouts are enabled.
 
-Accounts are created as US Express sandbox accounts. Use test US identity/bank details for this flow. See the official [Connect testing guide](https://docs.stripe.com/connect/testing).
+Accounts are created as US Accounts v2 merchant sandbox accounts with full Stripe Dashboard access and Stripe as both fees and losses collector. This matches the supplied sandbox's supported Managed Risk configuration; the legacy Express creation request is rejected there. Hosted onboarding still collects the seller's required information. Use test US identity/bank details for this flow. See the official [Connect testing guide](https://docs.stripe.com/connect/testing) and [Managed Risk account configuration](https://docs.stripe.com/connect/risk-management/connected-accounts-with-managed-risk).
+
+Readiness checks use Stripe's supported Accounts v1 view of the same account. Accounts v2 merchant changes also emit `account.updated` snapshot events, so the existing connected-account webhook and local forwarding events remain valid. See [Stripe's API interoperability guide](https://docs.stripe.com/connect/accounts-v2/migrate-integration#webhook-events). Checkout continues to use direct charges with a 10% application fee.
 
 No login or email-ownership verification is added because the assessment explicitly uses email matching. This is an assessment sandbox flow, not a production seller-identity system.
 

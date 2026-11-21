@@ -5,6 +5,7 @@ import { StripeGateway } from '../lib/payments/stripe-gateway';
 import { pendingOrder } from './helpers/payment-fakes';
 import { fakeContext, listingId, orderId } from './helpers/payment-fakes';
 import { createCheckout } from '../lib/payments/checkout';
+import { beginOnboarding } from '../lib/payments/onboarding';
 test('Stripe SDK sends a direct-charge Checkout request with the reserved price and platform fee',async()=>{
   const ctx=await pendingOrder();let captured:{headers:Headers;body:string}|null=null;
   const client=new Stripe('sk_test_unit_only',{maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient(async(_url,init)=>{
@@ -35,4 +36,38 @@ test('a lost Stripe response cannot be followed by a retry rejection that releas
   await assert.rejects(()=>createCheckout(listingId,{...ctx,gateway},orderId));
   assert.equal(ctx.repo.listing.status,'reserved');
   assert.equal(attempts,2,'SDK closed-connection recovery must not turn a later rejection into an inventory release');
+});
+
+test('seller setup uses sandbox-supported Accounts v2 and hosted onboarding while preserving readiness checks',async()=>{
+  const ctx=fakeContext();ctx.repo.seller=null;
+  const requests:{path:string;method:string;headers:Headers;body:string}[]=[];
+  const stripe=new Stripe('sk_test_unit_only',{maxNetworkRetries:0,httpClient:Stripe.createFetchHttpClient(async(url,init)=>{
+    const path=new URL(String(url)).pathname;
+    requests.push({path,method:String(init?.method),headers:new Headers(init?.headers),body:String(init?.body??'')});
+    const response=path==='/v2/core/accounts'?{id:'acct_testOwn',object:'v2.core.account',livemode:false,metadata:{marketplace_app_id:'own-app'}}:
+      path==='/v1/accounts/acct_testOwn'?{...ctx.gateway.account,details_submitted:false,charges_enabled:false,payouts_enabled:false}:
+      path==='/v2/core/account_links'?{url:'https://connect.stripe.com/setup/own',object:'v2.core.account_link'}:null;
+    return new Response(JSON.stringify(response??{error:{type:'invalid_request_error',message:'Use Accounts v2 with Stripe as losses collector.'}}),{status:response?200:400,headers:{'content-type':'application/json'}});
+  })});
+  const gateway=new StripeGateway(stripe);
+  const result=await beginOnboarding(' Seller@Example.COM ',{...ctx,gateway});
+  assert.equal(result.url,'https://connect.stripe.com/setup/own');
+  assert.equal(ctx.repo.seller!.stripe_account_id,'acct_testOwn');
+  assert.equal(ctx.repo.seller!.charges_enabled,false);
+  const create=requests.find(r=>r.path==='/v2/core/accounts')!;
+  const payload=JSON.parse(create.body);
+  assert.equal(payload.contact_email,'seller@example.com');
+  assert.equal(payload.dashboard,'full');
+  assert.deepEqual(payload.defaults.responsibilities,{fees_collector:'stripe',losses_collector:'stripe'});
+  assert.equal(payload.configuration.merchant.capabilities.card_payments.requested,true);
+  assert.equal(payload.metadata.marketplace_app_id,'own-app');
+  assert.equal('type' in payload,false);
+  assert.match(create.headers.get('idempotency-key')??'',/^marketplace-seller-v2-/);
+  const onboarding=JSON.parse(requests.find(r=>r.path==='/v2/core/account_links')!.body);
+  assert.equal(onboarding.account,'acct_testOwn');
+  assert.equal(onboarding.use_case.type,'account_onboarding');
+  assert.match(onboarding.use_case.account_onboarding.return_url,/\/api\/stripe\/onboarding\/return\?token=/);
+  assert.match(onboarding.use_case.account_onboarding.refresh_url,/\/api\/stripe\/onboarding\/refresh\?token=/);
+  await beginOnboarding('seller@example.com',{...ctx,gateway});
+  assert.equal(requests.filter(r=>r.path==='/v2/core/accounts').length,1,'restarting must reuse the saved account');
 });

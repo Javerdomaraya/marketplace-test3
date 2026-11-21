@@ -6,7 +6,7 @@ Extend the passed Test 3 Marketplace with sandbox-only seller onboarding, direct
 
 ## Approach
 
-Reuse Next.js 16.4.6 / React 19, Supabase, and the existing UI. Add the official Stripe Node SDK and server-side Next.js Route Handlers. Use Accounts v1 Express hosted onboarding and USD card Checkout on the seller's connected account. The alternative destination-charge flow is accepted by the assignment, but direct charges match the supplied shared-sandbox webhook instructions. Default fee: 10%, rounded to cents.
+Reuse Next.js 16.4.6 / React 19, Supabase, and the existing UI. Add the official Stripe Node SDK and server-side Next.js Route Handlers. Use Accounts v2 merchant creation with full Dashboard access, Stripe as fees/losses collector, and hosted onboarding; the supplied sandbox rejects legacy Accounts v1 Express creation. Readiness checks use Stripe's supported v1 view of that same account, and merchant changes still emit account.updated snapshot events. Use USD card Checkout on the seller's connected account. The alternative destination-charge flow is accepted by the assignment, but direct charges match the supplied shared-sandbox webhook instructions. Default fee: 10%, rounded to cents.
 
 Use the existing clean checkout on the feature branch, honoring the desktop preference to reuse a suitable checkout. Implement in this session with one independent final review; tasks share the payment and repository interfaces closely.
 

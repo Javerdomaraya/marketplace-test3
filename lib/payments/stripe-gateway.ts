@@ -15,9 +15,15 @@ export class StripeGateway implements PaymentGateway {
   constructor(private readonly stripe:Stripe) {}
   async createAccount(email:string,appId:string) {
     const key=createHash('sha256').update(appId+':'+email).digest('hex');
-    return account(await this.stripe.accounts.create({type:'express',country:'US',email,
-      capabilities:{card_payments:{requested:true},transfers:{requested:true}},metadata:{marketplace_app_id:appId}},
-      {idempotencyKey:'marketplace-seller-'+key}));
+    const created=await this.stripe.v2.core.accounts.create({
+      contact_email:email,dashboard:'full',identity:{country:'US'},
+      defaults:{currency:'usd',responsibilities:{fees_collector:'stripe',losses_collector:'stripe'}},
+      configuration:{merchant:{capabilities:{card_payments:{requested:true}}}},
+      metadata:{marketplace_app_id:appId},
+    },{idempotencyKey:'marketplace-seller-v2-'+key});
+    // Stripe's supported v1 view of a v2 account supplies the authoritative
+    // readiness flags used by checkout and account.updated snapshot events.
+    return this.getAccount(created.id);
   }
   async getAccount(id:string) {
     const result=await this.stripe.accounts.retrieve(id);
@@ -25,7 +31,8 @@ export class StripeGateway implements PaymentGateway {
     return account(result as Stripe.Account);
   }
   async createAccountLink(id:string,returnUrl:string,refreshUrl:string) {
-    return (await this.stripe.accountLinks.create({account:id,type:'account_onboarding',return_url:returnUrl,refresh_url:refreshUrl})).url;
+    return (await this.stripe.v2.core.accountLinks.create({account:id,use_case:{type:'account_onboarding',
+      account_onboarding:{return_url:returnUrl,refresh_url:refreshUrl}}})).url;
   }
   async createSession(spec:CheckoutSpec) {
     const {order}=spec;
